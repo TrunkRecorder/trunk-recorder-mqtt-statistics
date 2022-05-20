@@ -134,7 +134,8 @@ find_package(LibHackRF)
 find_package(LibUHD)
 find_package(OpenSSL REQUIRED)
 find_package(CURL REQUIRED)
-
+find_library(paho-mqttpp3 NAMES libpaho-mqttpp3.a REQUIRED)
+find_library(paho-mqtt3a NAMES libpaho-mqtt3a.a REQUIRED)
 
 ########################################################################
 # Setup boost
@@ -230,7 +231,7 @@ MODULE
   mqtt_plugin.cc
 )
 
-target_link_libraries(mqtt_plugin trunk-recorder ${Boost_LIBRARIES} ${GNURADIO_PMT_LIBRARIES} ${GNURADIO_RUNTIME_LIBRARIES} ${GNURADIO_FILTER_LIBRARIES} ${GNURADIO_DIGITAL_LIBRARIES} ${GNURADIO_ANALOG_LIBRARIES} ${GNURADIO_AUDIO_LIBRARIES} ${GNURADIO_UHD_LIBRARIES} ${UHD_LIBRARIES} ${GNURADIO_BLOCKS_LIBRARIES} ${GNURADIO_OSMOSDR_LIBRARIES}  ${LIBOP25_REPEATER_LIBRARIES} gnuradio-op25_repeater)
+target_link_libraries(mqtt_plugin trunk-recorder ${paho-mqttpp3}  ${paho-mqtt3a} ${Boost_LIBRARIES} ${GNURADIO_PMT_LIBRARIES} ${GNURADIO_RUNTIME_LIBRARIES} ${GNURADIO_FILTER_LIBRARIES} ${GNURADIO_DIGITAL_LIBRARIES} ${GNURADIO_ANALOG_LIBRARIES} ${GNURADIO_AUDIO_LIBRARIES} ${GNURADIO_UHD_LIBRARIES} ${UHD_LIBRARIES} ${GNURADIO_BLOCKS_LIBRARIES} ${GNURADIO_OSMOSDR_LIBRARIES}  ${LIBOP25_REPEATER_LIBRARIES} gnuradio-op25_repeater)
 
 if(NOT Gnuradio_VERSION VERSION_LESS "3.8")
 

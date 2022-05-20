@@ -38,17 +38,13 @@ const string DFLT_SERVER_ADDRESS { "tcp://localhost:1883" };
 const string TOPIC { "test" };
 const int QOS = 1;
 
-const char* PAYLOADS[] = {
-	"Hello World!",
-	"Hi there!",
-	"Is anyone listening?",
-	"Someone is always listening.",
-	nullptr
-};
+
+
+const char* PAYLOAD1 = "Hello World!";
 
 const auto TIMEOUT = std::chrono::seconds(10);
 
-class Stat_Socket : public Plugin_Api {
+class Stat_Socket : public Plugin_Api, public virtual mqtt::callback, public virtual mqtt::iaction_listener {
 
 
 
@@ -58,7 +54,32 @@ class Stat_Socket : public Plugin_Api {
   std::vector<Call *> calls;
   Config* config;
   mqtt::async_client *client;
+
+  protected:
+	void on_failure(const mqtt::token& tok) override {
+		cout << "\tListener failure for token: "
+			<< tok.get_message_id() << endl;
+	}
+
+	void on_success(const mqtt::token& tok) override {
+		cout << "\tListener success for token: "
+			<< tok.get_message_id() << endl;
+	}
+
 public:
+
+	void connection_lost(const string& cause) {
+		cout << "\nConnection lost" << endl;
+		if (!cause.empty())
+			cout << "\tcause: " << cause << endl;
+	}
+
+	void delivery_complete(mqtt::delivery_token_ptr tok)  {
+		cout << "\tDelivery complete for token: "
+			<< (tok ? tok->get_message_id() : -1) << endl;
+	}
+
+
   /**
  * The telemetry client connects to a WebFocket server and sends a message every
  * second containing an integer count. This example can be used as the basis for
@@ -78,8 +99,24 @@ public:
   }
 
   Stat_Socket() {
+    const char* LWT_PAYLOAD = "Last will and testament.";
     // set up access channels to only log interesting things
+    client = new mqtt::async_client(DFLT_SERVER_ADDRESS, "test", "./store");
+    	auto connOpts = mqtt::connect_options_builder()
+		.clean_session()
+		.will(mqtt::message(TOPIC, LWT_PAYLOAD, QOS))
+		.finalize();
+    	try {
+          cout << "\nConnecting..." << endl;
+          mqtt::token_ptr conntok = client->connect(connOpts);
+          cout << "Waiting for the connection..." << endl;
+          conntok->wait();
+          cout << "  ...OK" << endl;
+        }
+        catch (const mqtt::exception& exc) {
+          cerr << exc.what() << endl;
 
+        }
   }
 
   void send_config(std::vector<Source *> sources, std::vector<System *> systems) {
@@ -262,6 +299,18 @@ public:
     std::stringstream stats_str;
     boost::property_tree::write_json(stats_str, root);
 
+    	try {
+          cout << "\nSending message..." << endl;
+          mqtt::message_ptr pubmsg = mqtt::make_message(TOPIC, stats_str.str());
+          pubmsg->set_qos(QOS);
+          client->publish(pubmsg)->wait_for(TIMEOUT);
+          cout << "  ...OK" << endl;
+
+        }
+        catch (const mqtt::exception& exc) {
+          cerr << exc.what() << endl;
+
+        }
     // std::cout << stats_str;
     return 0; //send_stat(stats_str.str());
   }
