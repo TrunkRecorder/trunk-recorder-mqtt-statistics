@@ -26,3 +26,6 @@ cmake -Bbuild -H. -DPAHO_BUILD_STATIC=ON  -DPAHO_BUILD_DOCUMENTATION=TRUE -DPAHO
 sudo cmake --build build/ --target install
 sudo ldconfig
 ```
+
+
+/opt/homebrew/sbin/mosquitto -c /opt/homebrew/etc/mosquitto/mosquitto.conf

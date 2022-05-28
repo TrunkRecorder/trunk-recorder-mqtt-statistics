@@ -44,15 +44,22 @@ const char* PAYLOAD1 = "Hello World!";
 
 const auto TIMEOUT = std::chrono::seconds(10);
 
-class Stat_Socket : public Plugin_Api, public virtual mqtt::callback, public virtual mqtt::iaction_listener {
+class Mqtt_Status : public Plugin_Api, public virtual mqtt::callback, public virtual mqtt::iaction_listener {
 
-
+  time_t reconnect_time;
+  bool m_reconnect;
+  bool m_open;
+  bool m_done;
+  bool m_config_sent;
 
 
   std::vector<Source *> sources;
   std::vector<System *> systems;
   std::vector<Call *> calls;
   Config* config;
+  std::string mqtt_broker;
+  std::string username;
+  std::string password;
   mqtt::async_client *client;
 
   protected:
@@ -88,7 +95,6 @@ public:
  */
   int system_rates(std::vector<System *> systems, float timeDiff) {
     this->systems = systems;
-      
     boost::property_tree::ptree nodes;
 
     for (std::vector<System *>::iterator it = systems.begin(); it != systems.end(); it++) {
@@ -98,30 +104,17 @@ public:
     return send_object(nodes, "rates", "rates");
   }
 
-  Stat_Socket() {
-    const char* LWT_PAYLOAD = "Last will and testament.";
-    // set up access channels to only log interesting things
-    client = new mqtt::async_client(DFLT_SERVER_ADDRESS, "test", "./store");
-    	auto connOpts = mqtt::connect_options_builder()
-		.clean_session()
-		.will(mqtt::message(TOPIC, LWT_PAYLOAD, QOS))
-		.finalize();
-    	try {
-          cout << "\nConnecting..." << endl;
-          mqtt::token_ptr conntok = client->connect(connOpts);
-          cout << "Waiting for the connection..." << endl;
-          conntok->wait();
-          cout << "  ...OK" << endl;
-        }
-        catch (const mqtt::exception& exc) {
-          cerr << exc.what() << endl;
+  Mqtt_Status() : m_open(false), m_done(false), m_config_sent(false)  {
 
-        }
   }
 
   void send_config(std::vector<Source *> sources, std::vector<System *> systems) {
 
+    if (m_open == false)
+      return;
 
+    if (m_config_sent)
+      return;
 
     boost::property_tree::ptree root;
     boost::property_tree::ptree systems_node;
@@ -223,7 +216,7 @@ public:
 
     std::stringstream stats_str;
     boost::property_tree::write_json(stats_str, root);
-
+    m_config_sent = true;
   }
 
   int send_systems(std::vector<System *> systems) {
@@ -246,6 +239,7 @@ public:
   int calls_active(std::vector<Call *> calls) {
 
     boost::property_tree::ptree node;
+
 
     for (std::vector<Call *>::iterator it = calls.begin(); it != calls.end(); it++) {
       Call *call = *it;
@@ -289,6 +283,9 @@ public:
   }
 
   int send_object(boost::property_tree::ptree data, std::string name, std::string type) {
+
+    if (m_open == false)
+      return 0;
 
     boost::property_tree::ptree root;
 
@@ -419,6 +416,44 @@ public:
     }
   }*/
 
+  void open_connection() {
+
+
+   
+        const char* LWT_PAYLOAD = "Last will and testament.";
+    // set up access channels to only log interesting things
+    client = new mqtt::async_client(this->mqtt_broker , "test", "./store");
+
+	mqtt::connect_options connOpts;
+
+     if ((this->username != "" ) && (this->password != "")) {
+        cout << "\nsetting username and password..." << endl;
+         connOpts = mqtt::connect_options_builder().clean_session().user_name(this->username).password(this->password).will(mqtt::message(TOPIC, LWT_PAYLOAD, QOS))
+		.finalize();;
+      } else {
+        connOpts = mqtt::connect_options_builder().clean_session().will(mqtt::message(TOPIC, LWT_PAYLOAD, QOS))
+		.finalize();;
+      }
+      
+
+mqtt::ssl_options sslopts;
+    sslopts.set_verify(false);
+    sslopts.set_enable_server_cert_auth(false);
+    connOpts.set_ssl(sslopts);
+    	try {
+          cout << "\nConnecting..." << endl;
+          mqtt::token_ptr conntok = client->connect(connOpts);
+          cout << "Waiting for the connection..." << endl;
+          conntok->wait();
+          cout << "  ...OK" << endl;
+          m_open = true;
+        }
+        catch (const mqtt::exception& exc) {
+          cerr << exc.what() << endl;
+
+        }
+  }
+
  
   int init(Config *config, std::vector<Source *> sources, std::vector<System *> systems) {
 
@@ -430,7 +465,7 @@ public:
   }
 
   int start() {
-    //open_stat();
+    open_connection();
     return 0;
   }
 
@@ -462,19 +497,31 @@ public:
 
 
     // Factory method
-    static boost::shared_ptr<Stat_Socket> create() {
-        return boost::shared_ptr<Stat_Socket>(
-            new Stat_Socket()
+    static boost::shared_ptr<Mqtt_Status> create() {
+        return boost::shared_ptr<Mqtt_Status>(
+            new Mqtt_Status()
         );
     }
 
- int parse_config(boost::property_tree::ptree &cfg ){ return 0; }
+  int parse_config(boost::property_tree::ptree &cfg) {
+
+    this->mqtt_broker = cfg.get<std::string>("broker", "tcp://localhost:1883");
+    BOOST_LOG_TRIVIAL(info) << "MQTT Broker: " << this->mqtt_broker;
+    this->username = cfg.get<std::string>("username", "");
+    BOOST_LOG_TRIVIAL(info) << "MQTT Broker Username: " << this->username;
+    this->password = cfg.get<std::string>("password", "");
+
+
+
+    return 0;
+  }
+
    int stop() { return 0; }
    int setup_sources(std::vector<Source *> sources) { return 0; }
 
 };
 
 BOOST_DLL_ALIAS(
-   Stat_Socket::create, // <-- this function is exported with...
+   Mqtt_Status::create, // <-- this function is exported with...
     create_plugin                               // <-- ...this alias name
 )
