@@ -33,14 +33,7 @@ struct stat_plugin_t {
 
 using namespace std;
 
-const string DFLT_SERVER_ADDRESS { "tcp://localhost:1883" };
-
-const string TOPIC { "test" };
 const int QOS = 1;
-
-
-
-const char* PAYLOAD1 = "Hello World!";
 
 const auto TIMEOUT = std::chrono::seconds(10);
 
@@ -60,6 +53,7 @@ class Mqtt_Status : public Plugin_Api, public virtual mqtt::callback, public vir
   std::string mqtt_broker;
   std::string username;
   std::string password;
+  std::string topic;
   mqtt::async_client *client;
 
   protected:
@@ -298,7 +292,7 @@ public:
 
     	try {
           cout << "\nSending message..." << endl;
-          mqtt::message_ptr pubmsg = mqtt::make_message(TOPIC, stats_str.str());
+          mqtt::message_ptr pubmsg = mqtt::make_message(this->topic, stats_str.str());
           pubmsg->set_qos(QOS);
           client->publish(pubmsg)->wait_for(TIMEOUT);
           cout << "  ...OK" << endl;
@@ -417,21 +411,18 @@ public:
   }*/
 
   void open_connection() {
-
-
-   
         const char* LWT_PAYLOAD = "Last will and testament.";
     // set up access channels to only log interesting things
-    client = new mqtt::async_client(this->mqtt_broker , "test", "./store");
+    client = new mqtt::async_client(this->mqtt_broker , "test", "./store");  
 
 	mqtt::connect_options connOpts;
 
      if ((this->username != "" ) && (this->password != "")) {
         cout << "\nsetting username and password..." << endl;
-         connOpts = mqtt::connect_options_builder().clean_session().user_name(this->username).password(this->password).will(mqtt::message(TOPIC, LWT_PAYLOAD, QOS))
+         connOpts = mqtt::connect_options_builder().clean_session().user_name(this->username).password(this->password).will(mqtt::message("final", LWT_PAYLOAD, QOS))
 		.finalize();;
       } else {
-        connOpts = mqtt::connect_options_builder().clean_session().will(mqtt::message(TOPIC, LWT_PAYLOAD, QOS))
+        connOpts = mqtt::connect_options_builder().clean_session().will(mqtt::message("final", LWT_PAYLOAD, QOS))
 		.finalize();;
       }
       
@@ -507,6 +498,8 @@ mqtt::ssl_options sslopts;
 
     this->mqtt_broker = cfg.get<std::string>("broker", "tcp://localhost:1883");
     BOOST_LOG_TRIVIAL(info) << "MQTT Broker: " << this->mqtt_broker;
+    this->topic = cfg.get<std::string>("topic", "");
+    BOOST_LOG_TRIVIAL(info) << "MQTT Topic: " << this->topic;
     this->username = cfg.get<std::string>("username", "");
     BOOST_LOG_TRIVIAL(info) << "MQTT Broker Username: " << this->username;
     this->password = cfg.get<std::string>("password", "");

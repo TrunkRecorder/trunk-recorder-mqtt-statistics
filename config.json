@@ -20,8 +20,9 @@
     {
         "name": "example plugin",
         "library": "libmqtt_plugin.so",
-        "broker": "ssl://tr-hub.azure-devices.net:8883",
-        "username": "",
-        "password": ""
+        "broker": "tcp://io.adafruit.com:1883",
+        "topic": "robotastic/feeds",
+        "username": "robotastic",
+        "password": "" 
     }]
 }
