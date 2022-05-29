@@ -40,15 +40,4 @@ tr-hub.azure-devices.net/test/?api-version=2018-06-30
 The password must be a shared access signature in this form (including SharedAccessSignature at the start of the password:
 SharedAccessSignature sr=<your-hub-name>.azure-devices.net%2Fdevices%2F<your-device-name>&sig=<sig>%3D&se=<timestamp>
 
-HostName=tr-hub.azure-devices.net;DeviceId=test;SharedAccessKey=bOowp7rtaFkjHxOzhRd6i2Phsn5TjK+FKttFH8Ooea8=
 
-HostName=tr-hub.azure-devices.net;SharedAccessKeyName=device;SharedAccessKey=InfNvi9Jjq6CcehPaIEkHdYJ+xPh8UQh+uT3yId4suw=
-
-devices/test/messages/events/
-
-SharedAccessSignature sr=[yourIoTHub].azure-devices.net%2Fdevices%2F[DeviceId]&sig=[tokengeneratedforyourdevice]
-SharedAccessSignature sr=tr-hub.azure-devices.net%2Fdevices%2Ftest&sig=bOowp7rtaFkjHxOzhRd6i2Phsn5TjK+FKttFH8Ooea8=
-
-
-        //"username": "tr-hub.azure-devices.net/test/?api-version=2018-06-30",
-        //"password": "SharedAccessSignature sr=tr-hub.azure-devices.net&sig=GNSotqbn3yyr%2BXK0jC4opd%2BOzNkWIrQWniDKDpSuiu8%3D&se=1653834869&skn=iothubowner"
