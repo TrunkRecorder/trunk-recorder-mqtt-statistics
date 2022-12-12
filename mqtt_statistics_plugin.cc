@@ -65,14 +65,14 @@ protected:
   }
 
 public:
-  void connection_lost(const string &cause)
+  void connection_lost(const string &cause) override
   {
     cout << "\nConnection lost" << endl;
     if (!cause.empty())
       cout << "\tcause: " << cause << endl;
   }
 
-  void delivery_complete(mqtt::delivery_token_ptr tok)
+  void delivery_complete(mqtt::delivery_token_ptr tok) override
   {
     cout << "\tDelivery complete for token: "
          << (tok ? tok->get_message_id() : -1) << endl;
@@ -84,7 +84,7 @@ public:
    * programs where a client connects and pushes data for logging, stress/load
    * testing, etc.
    */
-  int system_rates(std::vector<System *> systems, float timeDiff)
+  int system_rates(std::vector<System *> systems, float timeDiff) override
   {
     /*
         boost::property_tree::ptree node;
@@ -111,7 +111,7 @@ public:
     return 0;
   }
 
-  int calls_active(std::vector<Call *> calls)
+  int calls_active(std::vector<Call *> calls) override
   {
 
     int num = calls.size();
@@ -170,14 +170,7 @@ public:
     }
   }
 
-  int init(Config *config, std::vector<Source *> sources, std::vector<System *> systems)
-  {
-
-
-    return 0;
-  }
-
-  int start()
+  int start() override
   {
     open_connection();
     return 0;
@@ -190,7 +183,7 @@ public:
         new Mqtt_Statistics());
   }
 
-  int parse_config(boost::property_tree::ptree &cfg)
+  int parse_config(boost::property_tree::ptree &cfg) override
   {
 
     this->mqtt_broker = cfg.get<std::string>("broker", "tcp://localhost:1883");
