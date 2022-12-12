@@ -54,27 +54,27 @@ class Mqtt_Statistics : public Plugin_Api, public virtual mqtt::callback, public
 protected:
   void on_failure(const mqtt::token &tok) override
   {
-    cout << "\tListener failure for token: "
+    BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin - \tListener failure for token: "
          << tok.get_message_id() << endl;
   }
 
   void on_success(const mqtt::token &tok) override
   {
-    cout << "\tListener success for token: "
+    BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin - \tListener success for token: "
          << tok.get_message_id() << endl;
   }
 
 public:
   void connection_lost(const string &cause) override
   {
-    cout << "\nConnection lost" << endl;
+    BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin - \tConnection lost" << endl;
     if (!cause.empty())
-      cout << "\tcause: " << cause << endl;
+      BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin - \tcause: " << cause << endl;
   }
 
   void delivery_complete(mqtt::delivery_token_ptr tok) override
   {
-    cout << "\tDelivery complete for token: "
+    BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin - \tDelivery complete for token: "
          << (tok ? tok->get_message_id() : -1) << endl;
   }
 
@@ -86,28 +86,19 @@ public:
    */
   int system_rates(std::vector<System *> systems, float timeDiff) override
   {
-    /*
         boost::property_tree::ptree node;
-
-
         node.push_back(std::make_pair("", systems.front()->get_stats_current(timeDiff)));
-
-
         std::stringstream stats_str;
         boost::property_tree::write_json(stats_str, node);
 
         try {
-              cout << "\nSending message..." << endl;
               mqtt::message_ptr pubmsg = mqtt::make_message(this->topic + "/decode", stats_str.str());
               pubmsg->set_qos(QOS);
-              client->publish(pubmsg)->wait_for(TIMEOUT);
-              cout << "  ...OK" << endl;
-
+              client->publish(pubmsg); //->wait_for(TIMEOUT);
         }
             catch (const mqtt::exception& exc) {
-              cerr << exc.what() << endl;
-
-        }*/
+              BOOST_LOG_TRIVIAL(error) << "MQTT Statistics Plugin - " <<exc.what() << endl;
+        }
     return 0;
   }
 
@@ -118,15 +109,13 @@ public:
     std::string s = std::to_string(num);
     try
     {
-      cout << "\nSending message..." << endl;
       mqtt::message_ptr pubmsg = mqtt::make_message(this->topic + "/calls", s);
       pubmsg->set_qos(QOS);
-      client->publish(pubmsg)->wait_for(TIMEOUT);
-      cout << "  ...OK" << endl;
+      client->publish(pubmsg); //->wait_for(TIMEOUT);
     }
     catch (const mqtt::exception &exc)
     {
-      cerr << exc.what() << endl;
+      BOOST_LOG_TRIVIAL(error) << "MQTT Statistics Plugin - " <<exc.what() << endl;
     }
     return 0;
   }
@@ -135,13 +124,13 @@ public:
   {
     const char *LWT_PAYLOAD = "Last will and testament.";
     // set up access channels to only log interesting things
-    client = new mqtt::async_client(this->mqtt_broker, "test", "./store");
+    client = new mqtt::async_client(this->mqtt_broker, "tr-statistics", "./store");
 
     mqtt::connect_options connOpts;
 
     if ((this->username != "") && (this->password != ""))
     {
-      cout << "\nsetting username and password..." << endl;
+      BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin - \tsetting username and password..." << endl;
       connOpts = mqtt::connect_options_builder().clean_session().user_name(this->username).password(this->password).will(mqtt::message("final", LWT_PAYLOAD, QOS)).finalize();
       ;
     }
@@ -155,18 +144,19 @@ public:
     sslopts.set_verify(false);
     sslopts.set_enable_server_cert_auth(false);
     connOpts.set_ssl(sslopts);
+    connOpts.set_automatic_reconnect(10, 40); //This seems to be a block reconnect
     try
     {
-      cout << "\nConnecting..." << endl;
+      BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin - \tConnecting...";
       mqtt::token_ptr conntok = client->connect(connOpts);
-      cout << "Waiting for the connection..." << endl;
+      BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin - \tWaiting for the connection...";
       conntok->wait();
-      cout << "  ...OK" << endl;
+      BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin - \t ...OK";
       m_open = true;
     }
     catch (const mqtt::exception &exc)
     {
-      cerr << exc.what() << endl;
+      BOOST_LOG_TRIVIAL(error) << "MQTT Statistics Plugin - " <<exc.what() << endl;
     }
   }
 
@@ -187,14 +177,14 @@ public:
   {
 
     this->mqtt_broker = cfg.get<std::string>("broker", "tcp://localhost:1883");
-    BOOST_LOG_TRIVIAL(info) << "MQTT Broker: " << this->mqtt_broker;
+    BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin Broker: " << this->mqtt_broker;
     this->topic = cfg.get<std::string>("topic", "");
     if (this->topic.back() == '/') {
       this->topic.erase(this->topic.size() - 1);
     }
-    BOOST_LOG_TRIVIAL(info) << "MQTT Topic: " << this->topic;
+    BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin Topic: " << this->topic;
     this->username = cfg.get<std::string>("username", "");
-    BOOST_LOG_TRIVIAL(info) << "MQTT Broker Username: " << this->username;
+    BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin Broker Username: " << this->username;
     this->password = cfg.get<std::string>("password", "");
 
     return 0;
