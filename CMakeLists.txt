@@ -185,17 +185,17 @@ include_directories(
     ${Boost_INCLUDE_DIRS}
     ${GNURADIO_RUNTIME_INCLUDE_DIRS}
     ${GNURADIO_OSMOSDR_INCLUDE_DIRS}
-    ${CMAKE_BINARY_DIR}/lib
-    ${CMAKE_BINARY_DIR}/include
-    ${CMAKE_SOURCE_DIR}/lib/op25_repeater/lib
-    ${CMAKE_SOURCE_DIR}/lib/op25_repeater/include
+    ${CMAKE_INSTALL_PREFIX}/include
+    ${CMAKE_INSTALL_PREFIX}/include/trunk-recorder
     ${OPENSSL_INCLUDE_DIR}
     ${CURL_INCLUDE_DIR}
     "lib"
 )
-#    ${PROTOBUF_INCLUDE_DIR}
-#    ${GRPC_INCLUDE_DIR}
-#)
+
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+  message(STATUS "dir='${dir}'")
+endforeach()
 
 link_directories(
     ${Boost_LIBRARY_DIRS}
@@ -209,22 +209,8 @@ SET(CMAKE_CXX_STANDARD 11)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -Wno-narrowing -fvisibility=hidden -fPIC")
 
-
-
-
-
-
-
-
 include(GNUInstallDirs)
 include_directories("/usr/local/include")
-
-
-#target_compile_options(
-#    imbe_vocoder PRIVATE
-#    "-w"
-#)
-
 
 add_library(mqtt_statistics_plugin
 MODULE
@@ -234,6 +220,8 @@ MODULE
 target_link_libraries(mqtt_statistics_plugin trunk-recorder ssl crypto ${paho-mqttpp3}  ${paho-mqtt3a} ${Boost_LIBRARIES} ${GNURADIO_PMT_LIBRARIES} ${GNURADIO_RUNTIME_LIBRARIES} ${GNURADIO_FILTER_LIBRARIES} ${GNURADIO_DIGITAL_LIBRARIES} ${GNURADIO_ANALOG_LIBRARIES} ${GNURADIO_AUDIO_LIBRARIES} ${GNURADIO_UHD_LIBRARIES} ${UHD_LIBRARIES} ${GNURADIO_BLOCKS_LIBRARIES} ${GNURADIO_OSMOSDR_LIBRARIES}  ${LIBOP25_REPEATER_LIBRARIES} gnuradio-op25_repeater)
 
 if(NOT Gnuradio_VERSION VERSION_LESS "3.8")
+
+
 
     target_link_libraries(mqtt_statistics_plugin
     gnuradio::gnuradio-analog

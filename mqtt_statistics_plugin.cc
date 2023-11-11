@@ -4,8 +4,8 @@
 #include <trunk-recorder/source.h>
 #include <trunk-recorder/plugin_manager/plugin_api.h>
 #include <trunk-recorder/gr_blocks/decoder_wrapper.h>
+#include <trunk-recorder/json.hpp>
 #include <boost/dll/alias.hpp> // for BOOST_DLL_ALIAS
-#include <boost/property_tree/json_parser.hpp>
 #include <boost/log/trivial.hpp>
 
 #include <iostream>
@@ -15,6 +15,7 @@
 #include <vector>
 #include <cstring>
 #include <mqtt/client.h>
+
 
 typedef struct stat_plugin_t stat_plugin_t;
 
@@ -173,19 +174,19 @@ public:
         new Mqtt_Statistics());
   }
 
-  int parse_config(boost::property_tree::ptree &cfg) override
-  {
+ int parse_config(json config_data)  override
+ {
 
-    this->mqtt_broker = cfg.get<std::string>("broker", "tcp://localhost:1883");
+    this->mqtt_broker = config_data.value("broker", "tcp://localhost:1883");
     BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin Broker: " << this->mqtt_broker;
-    this->topic = cfg.get<std::string>("topic", "");
+    this->topic = config_data.value("topic", "");
     if (this->topic.back() == '/') {
       this->topic.erase(this->topic.size() - 1);
     }
     BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin Topic: " << this->topic;
-    this->username = cfg.get<std::string>("username", "");
+    this->username = config_data.value("username", "");
     BOOST_LOG_TRIVIAL(info) << " MQTT Statistics Plugin Broker Username: " << this->username;
-    this->password = cfg.get<std::string>("password", "");
+    this->password = config_data.value("password", "");
 
     return 0;
   }
